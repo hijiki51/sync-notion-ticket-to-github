@@ -52,7 +52,7 @@ export const createGitHubIssue = async (
   // https://docs.github.com/en/graphql/reference/input-objects#addprojectv2itembyidinput
 
   const item = await octokit.graphql<{item: ProjectV2Item}>({
-    query: `mutation AddProjectV2ItemByIdInput($input: AddProjectV2ItemByIdInput!) {
+    query: `mutation($input: AddProjectV2ItemByIdInput!) {
       addProjectV2ItemById(input: $input) {
         clientMutationId
         item
@@ -65,7 +65,7 @@ export const createGitHubIssue = async (
   })
 
   await octokit.graphql<{item: ProjectV2Item}>({
-    query: `mutation AddProjectV2ItemByIdInput($input: UpdateProjectV2ItemFieldValueInput!) {
+    query: `mutation($input: UpdateProjectV2ItemFieldValueInput!) {
       updateProjectV2ItemFieldValue(input: $input) {
         clientMutationId
         item
