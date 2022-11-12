@@ -2,10 +2,61 @@ name: 'Your name here'
 description: 'Provide a description here'
 author: 'Your name or organization here'
 inputs:
-  milliseconds: # change this
+  github-token: # change this
     required: true
-    description: 'input description here'
-    default: 'default value if applicable'
+    description: 'GitHub token'
+  github-project-id:
+    required: true
+    description: 'GitHub project id'
+  github-project-status-field-id:
+    required: true
+    description: 'GitHub project status field id'
+  github-status-todo-id:
+    required: true
+    description: 'GitHub status todo id'
+  github-status-in-progress-id:
+    required: true
+    description: 'GitHub status in progress id'
+  github-status-review-id:
+    required: true
+    description: 'GitHub status review id'
+  github-status-done-id:
+    required: true
+    description: 'GitHub status done id'
+  repo-owner:
+    required: true
+    description: 'Repository owner'
+  repo-name:
+    required: true
+    description: 'Repository name'
+  notion-database-id:
+    required: true
+    description: 'Notion database id'
+  property-github-url:
+    required: true
+    description: 'Notion property github url'
+  property-sprint:
+    required: true
+    description: 'Notion property sprint'
+  property-status:
+    required: true
+    description: 'Notion property status'
+  property-issue-no:
+    required: true
+    description: 'Notion property issue no'
+  property-title:
+    required: true
+    description: 'Notion property title'
+  team-name-property:
+    required: true
+    description: 'Notion property team name'
+  team-name:
+    required: true
+    description: 'Team name'
+  notion-apikey:
+    required: true
+    description: 'Notion apikey'
+
 runs:
   using: 'node16'
   main: 'dist/index.js'

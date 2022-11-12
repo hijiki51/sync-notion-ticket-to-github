@@ -5,7 +5,7 @@ import {utcToZonedTime} from 'date-fns-tz'
 import {parse} from 'date-fns'
 
 const GITHUB_PROJECT_STATUS_ID_MAP = new Map([
-  ['保留', core.getInput('github-project-todo-id')],
+  ['保留', core.getInput('github-status-todo-id')],
   ['未着手', core.getInput('github-status-todo-id')],
   ['進行中', core.getInput('github-status-in-progress-id')],
   ['レビュー', core.getInput('github-status-review-id')],
