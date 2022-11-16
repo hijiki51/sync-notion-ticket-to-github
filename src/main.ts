@@ -1,8 +1,13 @@
-import {createGitHubIssue} from './github'
-import {getTasksFromDatabase, updateNotionIssueField} from './notion'
+import {createGitHubIssue, updateGitHubIssue} from './github'
+import {
+  getChangedTasksFromDatabase,
+  getTasksFromDatabase,
+  updateNotionIssueField
+} from './notion'
 import * as core from '@actions/core'
 import {utcToZonedTime} from 'date-fns-tz'
 import {parse} from 'date-fns'
+import {LinkedPage} from './types/page'
 
 const GITHUB_PROJECT_STATUS_ID_MAP = new Map([
   ['保留', core.getInput('github-status-todo-id')],
@@ -43,6 +48,30 @@ const REPO_NAME = core.getInput('repo-name')
       )
     }
   } catch (error) {
-    if (error instanceof Error) core.setFailed(error.message)
+    if (error instanceof Error)
+      core.setFailed(`create issue failed: ${error.message}`)
+  }
+})()
+;(async () => {
+  try {
+    const tasks = await getChangedTasksFromDatabase()
+    for await (const task of tasks) {
+      await updateGitHubIssue(
+        REPO_OWNER,
+        REPO_NAME,
+        task,
+        ((t: LinkedPage) => t.status === '完了' || t.status === 'アーカイブ')(
+          task
+        )
+      )
+      await new Promise<void>(resolve =>
+        setTimeout(() => {
+          resolve()
+        }, 500)
+      )
+    }
+  } catch (error) {
+    if (error instanceof Error)
+      core.setFailed(`update issue failed: ${error.message}`)
   }
 })()

@@ -23,10 +23,10 @@ const DATABASE_ID = core.getInput('notion-database-id')
 const TEAM_NAME = core.getInput('team-name')
 const PROPERTY_TEAM_NAME = 'チーム'
 const PROPERTY_TITLE = 'title'
-const PROPERTY_ISSUE_NO = 'GitHub Issue No'
 const PROPERTY_STATUS = 'ステータス'
 const PROPERTY_SPRINT = 'Sprint'
-const PROPERTY_GITHUB = 'Github issue link'
+const PROPERTY_GITHUB = 'Github Issue link'
+const PROPERTY_ISSUE_NO = 'GitHub Issue No'
 
 export const getTasksFromDatabase = async (): Promise<Page[]> => {
   const tasks: Page[] = []
@@ -91,7 +91,7 @@ export const getTasksFromDatabase = async (): Promise<Page[]> => {
         tasks.push({
           id: page.id,
           title: title.title.plain_text,
-          status: status.select?.name || 'undefined',
+          status: status.select?.name || '保留',
           sprint,
           content: mdString
         })
@@ -203,7 +203,7 @@ export const getChangedTasksFromDatabase = async (): Promise<LinkedPage[]> => {
           id: page.id,
           title: title.title.plain_text,
           content: mdString,
-          status: status.select?.name || 'undefined',
+          status: status.select?.name || '保留',
           sprint,
           issue_number: issueNo.number || 0
         })
