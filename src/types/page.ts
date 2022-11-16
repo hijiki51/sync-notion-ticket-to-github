@@ -11,5 +11,7 @@ export type LinkedPage = {
   title: string
   content: string
   status: string
+  sprint: string
   issue_number: number
+  lastEditedTime: string
 }
