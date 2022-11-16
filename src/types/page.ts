@@ -13,5 +13,4 @@ export type LinkedPage = {
   status: string
   sprint: string
   issue_number: number
-  lastEditedTime: string
 }

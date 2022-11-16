@@ -4,13 +4,17 @@ import {NotionToMarkdown} from 'notion-to-md'
 import * as core from '@actions/core'
 
 import {
+  NumberPropertyItemObjectResponse,
   PageObjectResponse,
   QueryDatabaseResponse,
-  RichTextItemResponse,
+  RelationPropertyItemObjectResponse,
+  SelectPropertyItemObjectResponse,
+  TitlePropertyItemObjectResponse,
   UpdatePageParameters
 } from '@notionhq/client/build/src/api-endpoints'
 // eslint-disable-next-line import/named
 import {RestEndpointMethodTypes} from '@octokit/plugin-rest-endpoint-methods'
+
 const notion = new Client({auth: core.getInput('notion-apikey')})
 
 const n2m = new NotionToMarkdown({notionClient: notion})
@@ -49,45 +53,35 @@ export const getTasksFromDatabase = async (): Promise<Page[]> => {
     })
     for await (const page of current_pages.results) {
       if (page.object === 'page' && isFullPage(page)) {
-        const title = page.properties[PROPERTY_TITLE] as {
-          type: 'title'
-          title: RichTextItemResponse[]
-          id: string
-        }
+        const title = await getProp<TitlePropertyItemObjectResponse>(
+          page.id,
+          PROPERTY_TITLE
+        )
+        const status = await getProp<SelectPropertyItemObjectResponse>(
+          page.id,
+          PROPERTY_STATUS
+        )
         const mdblocks = await n2m.pageToMarkdown(page.id)
         const mdString = n2m.toMarkdownString(mdblocks)
-        const status = page.properties[PROPERTY_STATUS] as {
-          type: 'select'
-          select: {
-            id: string
-            name: string
-            color: string
-          }
-          id: string
-        }
+
         const sprint = await (async (
           pg: PageObjectResponse
         ): Promise<string> => {
+          const sprintrel = await getProp<RelationPropertyItemObjectResponse>(
+            pg.id,
+            PROPERTY_SPRINT
+          )
           const resp = await notion.pages.retrieve({
-            page_id: (
-              pg.properties[PROPERTY_SPRINT] as {
-                type: 'relation'
-                relation: {
-                  id: string
-                }[]
-                id: string
-              }
-            ).relation[0].id
+            page_id: sprintrel.relation.id
           })
 
           if (resp.object === 'page' && isFullPage(resp)) {
             return (
-              page.properties[PROPERTY_TITLE] as {
-                type: 'title'
-                title: RichTextItemResponse[]
-                id: string
-              }
-            ).title[0].plain_text
+              await getProp<TitlePropertyItemObjectResponse>(
+                page.id,
+                PROPERTY_TITLE
+              )
+            ).title.plain_text
           } else {
             core.error('Sprint page not found')
             throw new Error('Sprint page not found')
@@ -96,8 +90,8 @@ export const getTasksFromDatabase = async (): Promise<Page[]> => {
 
         tasks.push({
           id: page.id,
-          title: title.title[0].plain_text,
-          status: status.select.name,
+          title: title.title.plain_text,
+          status: status.select?.name || 'undefined',
           sprint,
           content: mdString
         })
@@ -153,7 +147,11 @@ export const getChangedTasksFromDatabase = async (): Promise<LinkedPage[]> => {
           {
             timestamp: 'last_edited_time',
             last_edited_time: {
-              after: new Date().toISOString()
+              after: (() => {
+                const date = new Date()
+                date.setDate(date.getDate() - 1)
+                return date
+              })().toISOString()
             }
           }
         ]
@@ -162,45 +160,39 @@ export const getChangedTasksFromDatabase = async (): Promise<LinkedPage[]> => {
     })
     for await (const page of current_pages.results) {
       if (page.object === 'page' && isFullPage(page)) {
-        const title = page.properties[PROPERTY_TITLE] as {
-          type: 'title'
-          title: RichTextItemResponse[]
-          id: string
-        }
+        const title = await getProp<TitlePropertyItemObjectResponse>(
+          page.id,
+          PROPERTY_TITLE
+        )
+        const status = await getProp<SelectPropertyItemObjectResponse>(
+          page.id,
+          PROPERTY_STATUS
+        )
+        const issueNo = await getProp<NumberPropertyItemObjectResponse>(
+          page.id,
+          PROPERTY_ISSUE_NO
+        )
         const mdblocks = await n2m.pageToMarkdown(page.id)
         const mdString = n2m.toMarkdownString(mdblocks)
-        const status = page.properties[PROPERTY_STATUS] as {
-          type: 'select'
-          select: {
-            id: string
-            name: string
-            color: string
-          }
-          id: string
-        }
+
         const sprint = await (async (
           pg: PageObjectResponse
         ): Promise<string> => {
+          const sprintrel = await getProp<RelationPropertyItemObjectResponse>(
+            pg.id,
+            PROPERTY_SPRINT
+          )
           const resp = await notion.pages.retrieve({
-            page_id: (
-              pg.properties[PROPERTY_SPRINT] as {
-                type: 'relation'
-                relation: {
-                  id: string
-                }[]
-                id: string
-              }
-            ).relation[0].id
+            page_id: sprintrel.relation.id
           })
 
           if (resp.object === 'page' && isFullPage(resp)) {
             return (
-              page.properties[PROPERTY_TITLE] as {
-                type: 'title'
-                title: RichTextItemResponse[]
-                id: string
-              }
-            ).title[0].plain_text
+              await getProp<TitlePropertyItemObjectResponse>(
+                page.id,
+                PROPERTY_TITLE
+              )
+            ).title.plain_text
           } else {
             core.error('Sprint page not found')
             throw new Error('Sprint page not found')
@@ -209,15 +201,28 @@ export const getChangedTasksFromDatabase = async (): Promise<LinkedPage[]> => {
 
         tasks.push({
           id: page.id,
-          title: title.title[0].plain_text,
-          status: status.select.name,
+          title: title.title.plain_text,
+          content: mdString,
+          status: status.select?.name || 'undefined',
           sprint,
-          content: mdString
+          issue_number: issueNo.number || 0
         })
       }
     }
+
+    if (current_pages.has_more && current_pages.next_cursor !== null) {
+      await getPageOfTasks(current_pages.next_cursor)
+    }
   }
+  await getPageOfTasks()
+  return tasks
 }
 
+const getProp = async <T>(pageId: string, propId: string): Promise<T> => {
+  const response = notion.pages.properties.retrieve({
+    page_id: pageId,
+    property_id: propId
+  })
 
-const getParam = <T>(pageId: string, paramId: string):Promise<T>
+  return response as T
+}
