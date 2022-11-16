@@ -83,21 +83,20 @@ export const createGitHubIssue = async (
   return issue
 }
 
-export const updateGitHubIssues = async (
+export const updateGitHubIssue = async (
   owner: string,
   repo: string,
   task: LinkedPage,
-  statusDone: string[]
+  isDone: boolean
 ): Promise<void> => {
-  const state = statusDone.some(status => task.status === status)
-    ? 'closed'
-    : 'open'
+  const state = isDone ? 'closed' : 'open'
 
   await octokit.rest.issues.update({
     owner,
     repo,
     issue_number: task.issue_number,
     title: task.title,
+    body: task.content,
     state
   })
 }
