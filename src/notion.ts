@@ -219,10 +219,10 @@ export const getChangedTasksFromDatabase = async (): Promise<LinkedPage[]> => {
 }
 
 const getProp = async <T>(pageId: string, propId: string): Promise<T> => {
-  const response = notion.pages.properties.retrieve({
+  const response = await notion.pages.properties.retrieve({
     page_id: pageId,
     property_id: propId
   })
 
-  return response as T
+  return response as unknown as T
 }
